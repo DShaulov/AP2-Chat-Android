@@ -52,7 +52,6 @@
         android:gravity="center_horizontal"
         android:inputType="textEmailAddress"
         android:minHeight="48dp"
-        android:text="https://localhost:7201"
         app:layout_constraintBottom_toTopOf="@+id/optionsConfirmBtn"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.497"

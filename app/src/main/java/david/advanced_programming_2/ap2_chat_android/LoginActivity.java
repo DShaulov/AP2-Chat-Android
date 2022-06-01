@@ -1,8 +1,11 @@
 package david.advanced_programming_2.ap2_chat_android;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.room.Room;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -28,11 +31,21 @@ public class LoginActivity extends AppCompatActivity {
     private Button loginBtn;
     private TextView errorTextView;
     private ImageButton optionsBtn;
+    private AppDB db;
+    private MessageDao messageDao;
+    private ContactDao contactDao;
+    SharedPreferences preferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        db = Room.databaseBuilder(getApplicationContext(), AppDB.class, "ChatDB")
+                .allowMainThreadQueries()
+                .build();
+        messageDao = db.messageDao();
+        contactDao = db.contactDao();
 
         toRegisterBtn = findViewById(R.id.toRegisterBtn);
         loginBtn = findViewById(R.id.loginBtn);
@@ -40,13 +53,19 @@ public class LoginActivity extends AppCompatActivity {
         usernameField = findViewById(R.id.loginUsernameField);
         passwordField = findViewById(R.id.loginPasswordField);
         errorTextView = findViewById(R.id.loginErrorTextView);
-        currentUser = "";
         token = "";
         contacts = new ArrayList<>();
         messages = new HashMap<String, ArrayList<MessageModel>>();
+
+        preferences = getApplicationContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putString("currentUser", "");
+        editor.putString("token", "");
+        editor.putString("server", "https://localhost:7201");
+        editor.commit();
+
         fetchContacts();
         fetchMessages();
-
 
         toRegisterBtn.setOnClickListener(view -> startRegisterActivity());
         optionsBtn.setOnClickListener(view -> startOptionsActivity());
@@ -60,7 +79,10 @@ public class LoginActivity extends AppCompatActivity {
                 errorTextView.setText(R.string.loginValidityError);
                 return;
             }
-            currentUser = username;
+            SharedPreferences.Editor onClickEditor = preferences.edit();
+            onClickEditor.putString("currentUser", username);
+            onClickEditor.putString("token", token);
+            onClickEditor.commit();
             startContactsActivity();
         });
 

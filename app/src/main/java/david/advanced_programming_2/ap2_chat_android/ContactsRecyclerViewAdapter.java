@@ -39,7 +39,7 @@ public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRe
     public void onBindViewHolder(@NonNull ContactsRecyclerViewAdapter.MyViewHolder holder, int position) {
         int lastPosition = holder.getAdapterPosition();
         holder.contactName.setText(contacts.get(position).getName());
-        holder.contactLastDate.setText(contacts.get(position).getLastDate());
+        holder.contactLastDate.setText(contacts.get(position).getLastdate());
         holder.contactLastMessage.setText(contacts.get(position).getLast());
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
