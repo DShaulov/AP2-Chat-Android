@@ -7,17 +7,26 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import org.json.JSONObject;
+import com.google.firebase.iid.FirebaseInstanceId;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 
 public class LoginActivity extends AppCompatActivity {
@@ -34,12 +43,19 @@ public class LoginActivity extends AppCompatActivity {
     private AppDB db;
     private MessageDao messageDao;
     private ContactDao contactDao;
-    SharedPreferences preferences;
+    private SharedPreferences preferences;
+    private String firebaseToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        // Get firebase token for push notifications
+        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(LoginActivity.this, instanceIdResult -> {
+            firebaseToken = instanceIdResult.getToken();
+        });
+
 
         db = Room.databaseBuilder(getApplicationContext(), AppDB.class, "ChatDB")
                 .allowMainThreadQueries()
@@ -61,7 +77,7 @@ public class LoginActivity extends AppCompatActivity {
         SharedPreferences.Editor editor = preferences.edit();
         editor.putString("currentUser", "");
         editor.putString("token", "");
-        editor.putString("server", "https://localhost:7201");
+        editor.putString("server", "http://10.0.2.2:5201/");
         editor.commit();
 
         fetchContacts();
@@ -109,6 +125,35 @@ public class LoginActivity extends AppCompatActivity {
 
     // TODO
     private String validateUser(String username, String password) {
+        Retrofit retrofit = createRetrofit();
+        WebAPI webApi = retrofit.create(WebAPI.class);
+        Call<String> call = webApi.authenticateUser(username, password);
+
+        call.enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(Call<String> call, Response<String> response) {
+                if (!response.isSuccessful()) {
+                    Log.println(Log.ERROR, "RETRO", "UNSUCCESSFUL " + response.code());
+                    Toast.makeText(getApplicationContext(), "Code: " + response.code(), Toast.LENGTH_SHORT);
+                    return;
+                }
+                String tokenString = response.body();
+                // Case where password and username do not match
+                if (tokenString.equals("Invalid")) {
+                    Log.println(Log.ERROR, "RETRO", tokenString);
+
+                    Toast.makeText(getApplicationContext(), "Invalid", Toast.LENGTH_SHORT);
+                }
+                Log.println(Log.ERROR, "RETRO", tokenString);
+                Toast.makeText(getApplicationContext(), tokenString, Toast.LENGTH_SHORT);
+            }
+
+            @Override
+            public void onFailure(Call<String> call, Throwable t) {
+                Log.println(Log.ERROR, "RETRO", t.getMessage());
+                Toast.makeText(getApplicationContext(), t.getMessage(), Toast.LENGTH_SHORT);
+            }
+        });
         return "PLACEHOLDER";
     }
 
@@ -125,6 +170,16 @@ public class LoginActivity extends AppCompatActivity {
         contacts.add(dennisContactModel);
         contacts.add(charlieContactModel);
     }
+
+    Retrofit createRetrofit() {
+        String serverUrl = preferences.getString("server","");
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://10.0.2.2:7201/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        return retrofit;
+    }
+
 
     //TODO
     private void fetchMessages() {

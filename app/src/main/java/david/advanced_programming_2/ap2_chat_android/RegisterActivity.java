@@ -2,12 +2,17 @@ package david.advanced_programming_2.ap2_chat_android;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
+
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RegisterActivity extends AppCompatActivity {
     private Button toLoginBtn;
@@ -17,6 +22,7 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText nameField;
     private TextView errorTextView;
     private ImageButton optionsBtn;
+    private SharedPreferences preferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +36,8 @@ public class RegisterActivity extends AppCompatActivity {
         passwordField = findViewById(R.id.registerPasswordField);
         nameField = findViewById(R.id.registerNameField);
         errorTextView = findViewById(R.id.registerErrorTextView);
+        preferences = getApplicationContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+
 
         toLoginBtn.setOnClickListener(view -> startLoginActivity());
         registerBtn.setOnClickListener(view -> handleRegister());
@@ -60,5 +68,13 @@ public class RegisterActivity extends AppCompatActivity {
             return false;
         }
         return true;
+    }
+    Retrofit createRetrofit() {
+        String serverUrl = preferences.getString("server","");
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://10.0.2.2:7201/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        return retrofit;
     }
 }
