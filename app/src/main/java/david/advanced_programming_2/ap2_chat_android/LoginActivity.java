@@ -30,10 +30,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 
 public class LoginActivity extends AppCompatActivity {
-    private String currentUser;
-    private String token;
-    private ArrayList<ContactModel> contacts;
-    private HashMap<String, ArrayList<MessageModel>> messages;
+    private List<ContactModel> contacts;
+    private HashMap<String, List<MessageModel>> messages;
     private Button toRegisterBtn;
     private EditText usernameField;
     private EditText passwordField;
@@ -69,40 +67,39 @@ public class LoginActivity extends AppCompatActivity {
         usernameField = findViewById(R.id.loginUsernameField);
         passwordField = findViewById(R.id.loginPasswordField);
         errorTextView = findViewById(R.id.loginErrorTextView);
-        token = "";
         contacts = new ArrayList<>();
-        messages = new HashMap<String, ArrayList<MessageModel>>();
+        messages = new HashMap<String, List<MessageModel>>();
 
         preferences = getApplicationContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putString("currentUser", "");
         editor.putString("token", "");
-        editor.putString("server", "http://10.0.2.2:5201/");
+        editor.putString("server", "http://10.0.2.2:5201");
         editor.commit();
 
-        fetchContacts();
-        fetchMessages();
 
         toRegisterBtn.setOnClickListener(view -> startRegisterActivity());
         optionsBtn.setOnClickListener(view -> startOptionsActivity());
         loginBtn.setOnClickListener(view -> {
+            errorTextView.setText("");
             String username = usernameField.getText().toString();
             String password = passwordField.getText().toString();
-            // VALIDATION TODO
-            token = validateUser(username, password);
-            //
-            if (token.equals("")) {
-                errorTextView.setText(R.string.loginValidityError);
+            if (password.equals("") || username.equals("")) {
+                errorTextView.setText("*Fields cannot be empty");
                 return;
             }
-            SharedPreferences.Editor onClickEditor = preferences.edit();
-            onClickEditor.putString("currentUser", username);
-            onClickEditor.putString("token", token);
-            onClickEditor.commit();
-            startContactsActivity();
+            validateUser(username, password);
         });
 
-
+        // Case where user just registered
+        Bundle bundle = getIntent().getBundleExtra("Bundle");
+        if (bundle != null) {
+            String username = bundle.getString("username", "");
+            String password = bundle.getString("password", "");
+            if (!username.equals("") && !password.equals("")) {
+                validateUser(username, password);
+            }
+        }
     }
 
     private void startRegisterActivity() {
@@ -124,81 +121,67 @@ public class LoginActivity extends AppCompatActivity {
 
 
     // TODO
-    private String validateUser(String username, String password) {
+    private void validateUser(String username, String password) {
         Retrofit retrofit = createRetrofit();
         WebAPI webApi = retrofit.create(WebAPI.class);
-        Call<String> call = webApi.authenticateUser(username, password);
+        Call<ResponseModel> call = webApi.authenticateUser(username, password);
 
-        call.enqueue(new Callback<String>() {
+        call.enqueue(new Callback<ResponseModel>() {
             @Override
-            public void onResponse(Call<String> call, Response<String> response) {
+            public void onResponse(Call<ResponseModel> call, Response<ResponseModel> response) {
                 if (!response.isSuccessful()) {
-                    Log.println(Log.ERROR, "RETRO", "UNSUCCESSFUL " + response.code());
-                    Toast.makeText(getApplicationContext(), "Code: " + response.code(), Toast.LENGTH_SHORT);
-                    return;
+                    Log.println(Log.ERROR,"RETRO", "Request unsuccessful" + response.code());
                 }
-                String tokenString = response.body();
-                // Case where password and username do not match
+                String tokenString = response.body().getValue();
                 if (tokenString.equals("Invalid")) {
-                    Log.println(Log.ERROR, "RETRO", tokenString);
-
-                    Toast.makeText(getApplicationContext(), "Invalid", Toast.LENGTH_SHORT);
+                    errorTextView.setText("Username and password do not match");
                 }
-                Log.println(Log.ERROR, "RETRO", tokenString);
-                Toast.makeText(getApplicationContext(), tokenString, Toast.LENGTH_SHORT);
+                else {
+                    SharedPreferences.Editor onClickEditor = preferences.edit();
+                    onClickEditor.putString("currentUser", username);
+                    onClickEditor.putString("token", tokenString);
+                    onClickEditor.commit();
+                    fetchContacts();
+                }
             }
-
             @Override
-            public void onFailure(Call<String> call, Throwable t) {
-                Log.println(Log.ERROR, "RETRO", t.getMessage());
-                Toast.makeText(getApplicationContext(), t.getMessage(), Toast.LENGTH_SHORT);
+            public void onFailure(Call<ResponseModel> call, Throwable t) {
+                Log.println(Log.ERROR,"RETRO", "Request Failed: " + t.getMessage());
             }
         });
-        return "PLACEHOLDER";
     }
 
-    // TODO
     private void fetchContacts() {
-        // PLACEHOLDER
-        ContactModel dennisContactModel = new ContactModel("mac", "Mac",
-                "localhost:3000", "Goddamn Bitch",
-                "24-04-22", "mac");
-        ContactModel charlieContactModel = new ContactModel("charlie", "Charlie",
-                "localhost:3000", "Fight MilK!",
-                "24-04-22", "mac");
-        //
-        contacts.add(dennisContactModel);
-        contacts.add(charlieContactModel);
-    }
+        Retrofit retrofit = createRetrofit();
+        WebAPI webApi = retrofit.create(WebAPI.class);
+        String fullToken = "Bearer " + preferences.getString("token","");
+        Call<List<ContactModel>> call = webApi.getContacts(fullToken);
 
+        call.enqueue(new Callback<List<ContactModel>>() {
+            @Override
+            public void onResponse(Call<List<ContactModel>> call, Response<List<ContactModel>> response) {
+                if (!response.isSuccessful()) {
+                    Log.println(Log.ERROR,"RETRO", "Request unsuccessful" + response.code());
+                }
+                List<ContactModel> allContacts = response.body();
+                contacts = allContacts;
+                startContactsActivity();
+            }
+            @Override
+            public void onFailure(Call<List<ContactModel>> call, Throwable t) {
+                Log.println(Log.ERROR,"RETRO", "Request Failed: " + t.getMessage());
+            }
+        });
+    }
     Retrofit createRetrofit() {
         String serverUrl = preferences.getString("server","");
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://10.0.2.2:7201/")
+                .baseUrl(serverUrl)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         return retrofit;
     }
 
 
-    //TODO
-    private void fetchMessages() {
-        ArrayList<MessageModel> messagesWithCharlie = new ArrayList<>();
-        ArrayList<MessageModel> messagesWithMac = new ArrayList<>();
 
-        MessageModel message1 = new MessageModel("My elbows are massive", "24-04-2022",
-                false, "mac", "frank");
-        MessageModel message2 = new MessageModel("Goddamn you mac", "24-04-2022",
-                true, "frank", "mac");
-        MessageModel message3 = new MessageModel("Do you think a pirate lives in there?", "24-04-2022",
-                false, "charlie", "frank");
-        MessageModel message4 = new MessageModel("Botched toe!", "24-04-2022",
-                true, "frank", "charlie");
-        messagesWithMac.add(message1);
-        messagesWithMac.add(message2);
-        messagesWithCharlie.add(message3);
-        messagesWithCharlie.add(message4);
-        messages.put("charlie", messagesWithCharlie);
-        messages.put("mac", messagesWithMac);
-    }
 }
