@@ -28,7 +28,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRecyclerViewAdapter.MyViewHolder> {
     Context context;
-    ArrayList<ContactModel> contacts;
+    List<ContactModel> contacts;
     HashMap<String, ArrayList<MessageModel>> messages;
     SharedPreferences preferences;
     public ContactsRecyclerViewAdapter(Context context, ArrayList<ContactModel> contacts, HashMap<String, ArrayList<MessageModel>> messages, SharedPreferences preferences) {
@@ -47,6 +47,12 @@ public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRe
         return new ContactsRecyclerViewAdapter.MyViewHolder(view);
     }
 
+    public void updateContactList(List<ContactModel> updatedContacts) {
+        contacts.clear();
+        contacts = updatedContacts;
+        notifyDataSetChanged();
+    }
+
     @Override
     public void onBindViewHolder(@NonNull ContactsRecyclerViewAdapter.MyViewHolder holder, int position) {
         int lastPosition = holder.getAdapterPosition();
@@ -57,7 +63,9 @@ public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRe
             @Override
             public void onClick(View view) {
                 String contactId = contacts.get(lastPosition).getId();
-                fetchMessages(contactId, view);
+                String contactServer = contacts.get(lastPosition).getServer();
+                String contactName = contacts.get(lastPosition).getName();
+                fetchMessages(contactId, contactServer, contactName, view);
             }
         });
     }
@@ -80,7 +88,7 @@ public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRe
         }
     }
 
-    private void fetchMessages(String contactId, View view) {
+    private void fetchMessages(String contactId, String contactServer, String contactName, View view) {
         Retrofit retrofit = createRetrofit();
         WebAPI webApi = retrofit.create(WebAPI.class);
         String fullToken = "Bearer " + preferences.getString("token","");
@@ -97,6 +105,8 @@ public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRe
                 Bundle bundle = new Bundle();
                 bundle.putSerializable("messages", (Serializable) allMessages);
                 bundle.putString("contactId", contactId);
+                bundle.putString("contactServer", contactServer);
+                bundle.putString("contactName", contactName);
                 intent.putExtra("Bundle", bundle);
                 context.startActivity(intent);
             }

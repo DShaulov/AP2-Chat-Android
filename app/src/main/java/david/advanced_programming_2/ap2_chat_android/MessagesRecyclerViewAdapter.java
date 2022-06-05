@@ -14,16 +14,22 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MessagesRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int MESSAGE_TO = 1;
     private static final int MESSAGE_FROM = 2;
 
     Context context;
-    ArrayList<MessageModel> messages;
-    public MessagesRecyclerViewAdapter(Context context, ArrayList<MessageModel> messages) {
+    List<MessageModel> messages;
+    public MessagesRecyclerViewAdapter(Context context, List<MessageModel> messages) {
         this.messages = messages;
         this.context = context;
+    }
+    public void updateMessagesList(List<MessageModel> updatedMessages) {
+        this.messages.clear();
+        this.messages = updatedMessages;
+        notifyDataSetChanged();
     }
 
     @NonNull

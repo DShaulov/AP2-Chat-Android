@@ -25,6 +25,7 @@ public class RegisterActivity extends AppCompatActivity {
     private Button registerBtn;
     private EditText usernameField;
     private EditText passwordField;
+    private EditText passwordConfirmField;
     private EditText nameField;
     private TextView errorTextView;
     private ImageButton optionsBtn;
@@ -40,6 +41,7 @@ public class RegisterActivity extends AppCompatActivity {
         optionsBtn = findViewById(R.id.optionsBtn);
         usernameField = findViewById(R.id.registerUsernameField);
         passwordField = findViewById(R.id.registerPasswordField);
+        passwordConfirmField = findViewById(R.id.confirmPasswordEditText);
         nameField = findViewById(R.id.registerNameField);
         errorTextView = findViewById(R.id.registerErrorTextView);
         preferences = getApplicationContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
@@ -62,6 +64,11 @@ public class RegisterActivity extends AppCompatActivity {
         String username = usernameField.getText().toString();
         String displayName = nameField.getText().toString();
         String password = passwordField.getText().toString();
+        String confirmedPassword = passwordConfirmField.getText().toString();
+        if (!password.equals(confirmedPassword)) {
+            errorTextView.setText("*Passwords do not match");
+            return;
+        }
         errorTextView.setText("");
         if (!inputIsValid(password)) {
             errorTextView.setText(R.string.registerValidityError);

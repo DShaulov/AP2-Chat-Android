@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageButton;
 
@@ -16,10 +17,18 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ContactListActivity extends AppCompatActivity {
     ArrayList<ContactModel> contacts;
     HashMap<String, ArrayList<MessageModel>> messages;
+    private ContactsRecyclerViewAdapter adapter;
     SharedPreferences preferences;
     private FloatingActionButton floatingAddContactBtn;
     private ImageButton optionsBtn;
@@ -44,10 +53,38 @@ public class ContactListActivity extends AppCompatActivity {
         floatingAddContactBtn.setOnClickListener(view -> startAddContactActivity());
 
         RecyclerView recyclerView = findViewById(R.id.contactsRecyclerView);
-        ContactsRecyclerViewAdapter adapter = new ContactsRecyclerViewAdapter(this, contacts, messages, preferences);
+        adapter = new ContactsRecyclerViewAdapter(this, contacts, messages, preferences);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        fetchContacts();
+    }
+
+    private void fetchContacts() {
+        Retrofit retrofit = createRetrofit(preferences.getString("server",""));
+        WebAPI webApi = retrofit.create(WebAPI.class);
+        String fullToken = "Bearer " + preferences.getString("token","");
+        Call<List<ContactModel>> call = webApi.getContacts(fullToken);
+
+        call.enqueue(new Callback<List<ContactModel>>() {
+            @Override
+            public void onResponse(Call<List<ContactModel>> call, Response<List<ContactModel>> response) {
+                if (!response.isSuccessful()) {
+                    Log.println(Log.ERROR,"RETRO", "Request unsuccessful" + response.code());
+                }
+                List<ContactModel> allContacts = response.body();
+                adapter.updateContactList(allContacts);
+            }
+            @Override
+            public void onFailure(Call<List<ContactModel>> call, Throwable t) {
+                Log.println(Log.ERROR,"RETRO", "Request Failed: " + t.getMessage());
+            }
+        });
     }
 
     private void startOptionsActivity() {
@@ -62,5 +99,12 @@ public class ContactListActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    private Retrofit createRetrofit(String serverUrl) {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(serverUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        return retrofit;
+    }
 
 }

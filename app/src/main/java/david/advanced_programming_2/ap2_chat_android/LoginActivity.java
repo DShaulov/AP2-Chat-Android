@@ -147,6 +147,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ResponseModel> call, Throwable t) {
                 Log.println(Log.ERROR,"RETRO", "Request Failed: " + t.getMessage());
+                errorTextView.setText("*Server not responding");
             }
         });
     }
@@ -170,6 +171,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<List<ContactModel>> call, Throwable t) {
                 Log.println(Log.ERROR,"RETRO", "Request Failed: " + t.getMessage());
+                errorTextView.setText("*Server not responding");
             }
         });
     }

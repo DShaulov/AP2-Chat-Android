@@ -6,7 +6,16 @@
     android:layout_height="match_parent">
 
 
-
+    <TextView
+        android:id="@+id/contactNameTextView"
+        android:layout_width="413dp"
+        android:layout_height="45dp"
+        android:layout_marginBottom="12dp"
+        android:gravity="center_horizontal"
+        android:text="TextView"
+        android:textSize="32dp"
+        app:layout_constraintBottom_toTopOf="@+id/messagesRecyclerView"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/chatSendBtn"
@@ -19,21 +28,20 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/messagesRecyclerView"
-        android:layout_width="411dp"
-        android:layout_height="538dp"
+        android:layout_width="409dp"
+        android:layout_height="468dp"
+        android:layout_marginBottom="32dp"
         app:layout_constraintBottom_toTopOf="@+id/chatInputEditText"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar" />
-
-
+        app:layout_constraintStart_toStartOf="parent" />
 
     <EditText
         android:id="@+id/chatInputEditText"
-        android:layout_width="321dp"
-        android:layout_height="50dp"
+        android:layout_width="311dp"
+        android:layout_height="49dp"
         android:ems="10"
         android:hint="Enter message"
         android:inputType="textEmailAddress"
@@ -48,9 +56,12 @@
         android:background="@color/navbar_background"
         android:minHeight="?attr/actionBarSize"
         android:theme="?attr/actionBarTheme"
+        app:layout_constraintBottom_toTopOf="@+id/contactNameTextView"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:id="@+id/textView5"
@@ -75,5 +86,6 @@
         app:layout_constraintTop_toTopOf="@+id/toolbar"
         app:layout_constraintVertical_bias="0.458"
         app:srcCompat="@android:drawable/ic_menu_sort_by_size" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -40,5 +40,9 @@ public interface WebAPI {
     Call<ResponseBody> postMessage(@Header("Authorization") String token, @Path("contactId") String contactId,
                                    @Query("content") String content);
 
+    @POST("/api/transfer")
+    Call<Void> transferMessage(@Query("from") String from, @Query("to") String to ,@Query("content") String content);
+
+
 
 }
