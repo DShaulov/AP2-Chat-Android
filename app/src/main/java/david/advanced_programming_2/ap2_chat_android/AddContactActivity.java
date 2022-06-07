@@ -5,9 +5,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Patterns;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,6 +33,8 @@ public class AddContactActivity extends AppCompatActivity {
     private ImageButton optionsBtn;
     private TextView errorTextView;
     private SharedPreferences preferences;
+    private ProgressBar progressBar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,6 +49,8 @@ public class AddContactActivity extends AppCompatActivity {
         addContactBtn = findViewById(R.id.addContactBtn);
         optionsBtn = findViewById(R.id.optionsBtn);
         errorTextView = findViewById(R.id.addContactErrorTextView);
+        progressBar = findViewById(R.id.addContactProgressBar);
+        progressBar.setVisibility(View.INVISIBLE);
 
         db = Room.databaseBuilder(getApplicationContext(), AppDB.class, "ChatDB")
                 .allowMainThreadQueries()
@@ -73,8 +80,15 @@ public class AddContactActivity extends AppCompatActivity {
                 return;
             }
         }
+        // Check that URL is valid
+        boolean urlIsValid = Patterns.WEB_URL.matcher(contactServerString).matches();
+        if (!urlIsValid) {
+            errorTextView.setText("*Server URL is invalid");
+            return;
+        }
         // If contact on my server, check if exists and send invite
         // If contact not on my server, just send invite
+        progressBar.setVisibility(View.VISIBLE);
         checkAndAddContact(contactUsernameString, contactNameString, contactServerString, currentUser);
     }
     // TODO
@@ -90,18 +104,21 @@ public class AddContactActivity extends AppCompatActivity {
                 public void onResponse(Call<ResponseModel> call, Response<ResponseModel> response) {
                     if (!response.isSuccessful()) {
                         Log.println(Log.ERROR,"RETRO", "Request unsuccessful" + response.code());
+                        progressBar.setVisibility(View.INVISIBLE);
                     }
                     String responseString = response.body().getValue();
                     if (responseString.equals("EXISTS")) {
                         addContactInvitation(contactId, name, server ,whose);
                     }
                     else {
+                        progressBar.setVisibility(View.INVISIBLE);
                         errorTextView.setText("*Contact does not exist on server");
                     }
                 }
                 @Override
                 public void onFailure(Call<ResponseModel> call, Throwable t) {
                     Log.println(Log.ERROR,"RETRO", "Request Failed: " + t.getMessage());
+                    progressBar.setVisibility(View.INVISIBLE);
                 }
             });
         }
@@ -123,6 +140,7 @@ public class AddContactActivity extends AppCompatActivity {
                 if (!response.isSuccessful()) {
                     Log.println(Log.ERROR,"RETRO", "Request unsuccessful" + response.code());
                     errorTextView.setText("Request unsuccessful");
+                    progressBar.setVisibility(View.INVISIBLE);
                 }
                 else {
                     addContactMyServer(contactId, name, server ,whose);
@@ -132,6 +150,7 @@ public class AddContactActivity extends AppCompatActivity {
             public void onFailure(Call<Void> call, Throwable t) {
                 Log.println(Log.ERROR,"RETRO", "Request Failed: " + t.getMessage());
                 errorTextView.setText("*Contact server not responding");
+                progressBar.setVisibility(View.INVISIBLE);
             }
         });
     }
@@ -148,8 +167,10 @@ public class AddContactActivity extends AppCompatActivity {
                 if (!response.isSuccessful()) {
                     Log.println(Log.ERROR,"RETRO", "Request unsuccessful" + response.code());
                     errorTextView.setText("*Request unsuccessful");
+                    progressBar.setVisibility(View.INVISIBLE);
                 }
                 else {
+                    progressBar.setVisibility(View.INVISIBLE);
                     finish();
                 }
             }
@@ -157,6 +178,7 @@ public class AddContactActivity extends AppCompatActivity {
             public void onFailure(Call<Void> call, Throwable t) {
                 Log.println(Log.ERROR,"RETRO", "Request Failed: " + t.getMessage());
                 errorTextView.setText("*Server not responding");
+                progressBar.setVisibility(View.INVISIBLE);
             }
         });
     }
@@ -175,6 +197,4 @@ public class AddContactActivity extends AppCompatActivity {
                 .build();
         return retrofit;
     }
-
-
 }

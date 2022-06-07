@@ -3,6 +3,7 @@ package david.advanced_programming_2.ap2_chat_android;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
 
@@ -14,7 +15,7 @@ public interface ContactDao {
     List<ContactModel> index();
     @Query("SELECT * FROM contactmodel WHERE id = :id")
     ContactModel get(int id);
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     void insert(ContactModel contact);
     @Update
     void update(ContactModel contact);

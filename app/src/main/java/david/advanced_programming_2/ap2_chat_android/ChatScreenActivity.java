@@ -1,32 +1,25 @@
 package david.advanced_programming_2.ap2_chat_android;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.io.Serializable;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import okhttp3.ResponseBody;
@@ -49,6 +42,24 @@ public class ChatScreenActivity extends AppCompatActivity {
     private ImageButton optionsBtn;
     private SharedPreferences preferences;
     private MessagesViewModel messageData;
+
+    private BroadcastReceiver messageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // TODO remove if unnecessary
+            /*MessageModel newMessage = new MessageModel(
+                    intent.getExtras().getString("body"),
+                    intent.getExtras().getString("time"),
+                    false,
+                    intent.getExtras().getString("from"),
+                    intent.getExtras().getString("to")
+            );
+            messages.add(newMessage);
+            adapter.notifyDataSetChanged();
+            messagesRecyclerView.scrollToPosition(messages.size() - 1);*/
+            fetchMessages(contactId);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +90,20 @@ public class ChatScreenActivity extends AppCompatActivity {
 
         contactNameTextView.setText(contactName);
 
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        LocalBroadcastManager.getInstance(this).registerReceiver((messageReceiver),
+                new IntentFilter("MessageData")
+        );
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(messageReceiver);
     }
 
     private void startOptionsActivity() {

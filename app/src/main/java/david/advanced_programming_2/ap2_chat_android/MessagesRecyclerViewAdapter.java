@@ -87,7 +87,7 @@ public class MessagesRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
 
         void bind(MessageModel message) {
             messageView.setText(message.getContent());
-            timeView.setText(message.getCreated());
+            timeView.setText(message.getCreated().replace("T", " "));
         }
     }
 
@@ -102,7 +102,7 @@ public class MessagesRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
 
         void bind(MessageModel message) {
             messageView.setText(message.getContent());
-            timeView.setText(message.getCreated());
+            timeView.setText(message.getCreated().replace("T", " "));
         }
     }
 }

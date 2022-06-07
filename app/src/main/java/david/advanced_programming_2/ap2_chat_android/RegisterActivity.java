@@ -7,10 +7,15 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.iid.FirebaseInstanceId;
 
 import java.io.Serializable;
 
@@ -23,6 +28,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class RegisterActivity extends AppCompatActivity {
     private Button toLoginBtn;
     private Button registerBtn;
+    private Button uploadImageBtn;
     private EditText usernameField;
     private EditText passwordField;
     private EditText passwordConfirmField;
@@ -30,6 +36,9 @@ public class RegisterActivity extends AppCompatActivity {
     private TextView errorTextView;
     private ImageButton optionsBtn;
     private SharedPreferences preferences;
+    private String firebaseToken;
+    private ProgressBar progressBar;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +47,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         toLoginBtn = (Button) findViewById(R.id.toLoginBtn);
         registerBtn = (Button) findViewById(R.id.registerScreenRegisterBtn);
+        uploadImageBtn = findViewById(R.id.uploadImageBtn);
         optionsBtn = findViewById(R.id.optionsBtn);
         usernameField = findViewById(R.id.registerUsernameField);
         passwordField = findViewById(R.id.registerPasswordField);
@@ -45,12 +55,21 @@ public class RegisterActivity extends AppCompatActivity {
         nameField = findViewById(R.id.registerNameField);
         errorTextView = findViewById(R.id.registerErrorTextView);
         preferences = getApplicationContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-
+        progressBar = findViewById(R.id.registerProgressBar);
+        progressBar.setVisibility(View.INVISIBLE);
 
         toLoginBtn.setOnClickListener(view -> startLoginActivity());
         registerBtn.setOnClickListener(view -> handleRegister());
         optionsBtn.setOnClickListener(view -> startOptionsActivity());
+        uploadImageBtn.setOnClickListener(view -> {
+            //startActivityForResult(new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.INTERNAL_CONTENT_URI), GET_FROM_GALLERY);
+        });
 
+        // Get firebase token for push notifications
+
+        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(RegisterActivity.this, instanceIdResult -> {
+            firebaseToken = instanceIdResult.getToken();
+        });
     }
 
     private void startLoginActivity() {
@@ -78,6 +97,7 @@ public class RegisterActivity extends AppCompatActivity {
             errorTextView.setText("*Fields cannot be empty");
             return;
         }
+        progressBar.setVisibility(View.VISIBLE);
         // Check that username is not taken and register the user
         checkAndRegister(username, password, displayName);
 
@@ -109,10 +129,12 @@ public class RegisterActivity extends AppCompatActivity {
             public void onResponse(Call<ResponseModel> call, Response<ResponseModel> response) {
                 if (!response.isSuccessful()) {
                     Log.println(Log.ERROR,"RETRO", "Request unsuccessful" + response.code());
+                    progressBar.setVisibility(View.INVISIBLE);
                 }
                 String responseString = response.body().getValue();
                 if (responseString.equals("EXISTS")) {
                     errorTextView.setText("*Username already taken");
+                    progressBar.setVisibility(View.INVISIBLE);
                     return;
                 }
                 // Register the user with the API
@@ -122,6 +144,8 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ResponseModel> call, Throwable t) {
                 Log.println(Log.ERROR,"RETRO", "Request Failed: " + t.getMessage());
+                errorTextView.setText("*Server not responding");
+                progressBar.setVisibility(View.INVISIBLE);
             }
         });
     }
@@ -130,15 +154,17 @@ public class RegisterActivity extends AppCompatActivity {
         Retrofit retrofit = createRetrofit();
         WebAPI webApi = retrofit.create(WebAPI.class);
         String serverURL = preferences.getString("server", "");
-        Call<ResponseModel> call = webApi.registerUser(username, password, displayName, serverURL);
+        Call<ResponseModel> call = webApi.registerUser(username, password, displayName, serverURL, firebaseToken);
 
         call.enqueue(new Callback<ResponseModel>() {
             @Override
             public void onResponse(Call<ResponseModel> call, Response<ResponseModel> response) {
                 if (!response.isSuccessful()) {
                     Log.println(Log.ERROR,"RETRO", "Request unsuccessful" + response.code());
+                    progressBar.setVisibility(View.INVISIBLE);
                 }
                 else {
+                    progressBar.setVisibility(View.INVISIBLE);
                     login(username, password);
                 }
             }
@@ -146,6 +172,8 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ResponseModel> call, Throwable t) {
                 Log.println(Log.ERROR,"RETRO", "Request Failed: " + t.getMessage());
+                progressBar.setVisibility(View.INVISIBLE);
+                errorTextView.setText("*Server not responding");
             }
         });
 

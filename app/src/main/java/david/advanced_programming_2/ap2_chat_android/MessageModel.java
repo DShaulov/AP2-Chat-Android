@@ -1,11 +1,12 @@
 package david.advanced_programming_2.ap2_chat_android;
 
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 import java.io.Serializable;
 
-@Entity
+@Entity(indices = {@Index(value = {"content", "sent", "from", "to"}, unique = true)})
 public class MessageModel implements Serializable {
     @PrimaryKey(autoGenerate = true)
     private int id;

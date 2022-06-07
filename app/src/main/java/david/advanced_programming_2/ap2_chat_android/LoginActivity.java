@@ -7,10 +7,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,18 +45,12 @@ public class LoginActivity extends AppCompatActivity {
     private MessageDao messageDao;
     private ContactDao contactDao;
     private SharedPreferences preferences;
-    private String firebaseToken;
+    private ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
-        // Get firebase token for push notifications
-        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(LoginActivity.this, instanceIdResult -> {
-            firebaseToken = instanceIdResult.getToken();
-        });
-
 
         db = Room.databaseBuilder(getApplicationContext(), AppDB.class, "ChatDB")
                 .allowMainThreadQueries()
@@ -67,6 +64,8 @@ public class LoginActivity extends AppCompatActivity {
         usernameField = findViewById(R.id.loginUsernameField);
         passwordField = findViewById(R.id.loginPasswordField);
         errorTextView = findViewById(R.id.loginErrorTextView);
+        progressBar = findViewById(R.id.loginProgressBar);
+        progressBar.setVisibility(View.INVISIBLE);
         contacts = new ArrayList<>();
         messages = new HashMap<String, List<MessageModel>>();
 
@@ -88,6 +87,7 @@ public class LoginActivity extends AppCompatActivity {
                 errorTextView.setText("*Fields cannot be empty");
                 return;
             }
+            progressBar.setVisibility(View.VISIBLE);
             validateUser(username, password);
         });
 
@@ -97,12 +97,14 @@ public class LoginActivity extends AppCompatActivity {
             String username = bundle.getString("username", "");
             String password = bundle.getString("password", "");
             if (!username.equals("") && !password.equals("")) {
+                progressBar.setVisibility(View.VISIBLE);
                 validateUser(username, password);
             }
         }
     }
 
     private void startRegisterActivity() {
+        errorTextView.setText("");
         Intent intent = new Intent(this, RegisterActivity.class);
         startActivity(intent);
     }
@@ -125,18 +127,22 @@ public class LoginActivity extends AppCompatActivity {
         Retrofit retrofit = createRetrofit();
         WebAPI webApi = retrofit.create(WebAPI.class);
         Call<ResponseModel> call = webApi.authenticateUser(username, password);
+        SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         call.enqueue(new Callback<ResponseModel>() {
             @Override
             public void onResponse(Call<ResponseModel> call, Response<ResponseModel> response) {
                 if (!response.isSuccessful()) {
                     Log.println(Log.ERROR,"RETRO", "Request unsuccessful" + response.code());
+                    progressBar.setVisibility(View.INVISIBLE);
                 }
                 String tokenString = response.body().getValue();
                 if (tokenString.equals("Invalid")) {
                     errorTextView.setText("Username and password do not match");
+                    progressBar.setVisibility(View.INVISIBLE);
                 }
                 else {
+                    // Update user preferences
                     SharedPreferences.Editor onClickEditor = preferences.edit();
                     onClickEditor.putString("currentUser", username);
                     onClickEditor.putString("token", tokenString);
@@ -148,6 +154,7 @@ public class LoginActivity extends AppCompatActivity {
             public void onFailure(Call<ResponseModel> call, Throwable t) {
                 Log.println(Log.ERROR,"RETRO", "Request Failed: " + t.getMessage());
                 errorTextView.setText("*Server not responding");
+                progressBar.setVisibility(View.INVISIBLE);
             }
         });
     }
@@ -163,15 +170,21 @@ public class LoginActivity extends AppCompatActivity {
             public void onResponse(Call<List<ContactModel>> call, Response<List<ContactModel>> response) {
                 if (!response.isSuccessful()) {
                     Log.println(Log.ERROR,"RETRO", "Request unsuccessful" + response.code());
+                    progressBar.setVisibility(View.INVISIBLE);
                 }
                 List<ContactModel> allContacts = response.body();
                 contacts = allContacts;
+                for (ContactModel contact : contacts) {
+                    contactDao.insert(contact);
+                }
+                progressBar.setVisibility(View.INVISIBLE);
                 startContactsActivity();
             }
             @Override
             public void onFailure(Call<List<ContactModel>> call, Throwable t) {
                 Log.println(Log.ERROR,"RETRO", "Request Failed: " + t.getMessage());
                 errorTextView.setText("*Server not responding");
+                progressBar.setVisibility(View.INVISIBLE);
             }
         });
     }

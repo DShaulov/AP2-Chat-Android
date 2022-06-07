@@ -3,6 +3,7 @@ package david.advanced_programming_2.ap2_chat_android;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
 
@@ -14,7 +15,7 @@ public interface MessageDao {
     List<MessageModel> index();
     @Query("SELECT * FROM messagemodel WHERE id = :id")
     MessageModel get(int id);
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     void insert(MessageModel message);
     @Update
     void update(MessageModel message);

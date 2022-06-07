@@ -11,6 +11,7 @@ import android.widget.ImageButton;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.room.Room;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -27,6 +28,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ContactListActivity extends AppCompatActivity {
     ArrayList<ContactModel> contacts;
+    private AppDB db;
+    private MessageDao messageDao;
     HashMap<String, ArrayList<MessageModel>> messages;
     private ContactsRecyclerViewAdapter adapter;
     SharedPreferences preferences;
@@ -38,6 +41,11 @@ public class ContactListActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_contacts);
+
+        db = Room.databaseBuilder(getApplicationContext(), AppDB.class, "ChatDB")
+                .allowMainThreadQueries()
+                .build();
+        messageDao = db.messageDao();
 
         Bundle bundle = getIntent().getBundleExtra("Bundle");
         ArrayList<ContactModel> contactList = (ArrayList<ContactModel>) bundle.getSerializable("contactsList");
@@ -53,7 +61,7 @@ public class ContactListActivity extends AppCompatActivity {
         floatingAddContactBtn.setOnClickListener(view -> startAddContactActivity());
 
         RecyclerView recyclerView = findViewById(R.id.contactsRecyclerView);
-        adapter = new ContactsRecyclerViewAdapter(this, contacts, messages, preferences);
+        adapter = new ContactsRecyclerViewAdapter(this, contacts, messages, preferences, db, messageDao);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 

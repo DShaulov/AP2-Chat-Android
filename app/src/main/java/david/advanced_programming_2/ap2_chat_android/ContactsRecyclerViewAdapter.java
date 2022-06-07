@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,17 +29,21 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRecyclerViewAdapter.MyViewHolder> {
     Context context;
+    private AppDB db;
+    private MessageDao messageDao;
     List<ContactModel> contacts;
     HashMap<String, ArrayList<MessageModel>> messages;
     SharedPreferences preferences;
-    public ContactsRecyclerViewAdapter(Context context, ArrayList<ContactModel> contacts, HashMap<String, ArrayList<MessageModel>> messages, SharedPreferences preferences) {
+    public ContactsRecyclerViewAdapter(Context context, ArrayList<ContactModel> contacts,
+                                       HashMap<String, ArrayList<MessageModel>> messages, SharedPreferences preferences,
+                                       AppDB db, MessageDao messageDao) {
         this.contacts = contacts;
         this.context = context;
         this.messages = messages;
         this.preferences = preferences;
-
+        this.db = db;
+        this.messageDao = messageDao;
     }
-
     @NonNull
     @Override
     public ContactsRecyclerViewAdapter.MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -57,7 +62,7 @@ public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRe
     public void onBindViewHolder(@NonNull ContactsRecyclerViewAdapter.MyViewHolder holder, int position) {
         int lastPosition = holder.getAdapterPosition();
         holder.contactName.setText(contacts.get(position).getName());
-        holder.contactLastDate.setText(contacts.get(position).getLastdate());
+        holder.contactLastDate.setText(contacts.get(position).getLastdate().replace("T", " "));
         holder.contactLastMessage.setText(contacts.get(position).getLast());
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -101,6 +106,10 @@ public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRe
                     Log.println(Log.ERROR,"RETRO", "Request unsuccessful" + response.code());
                 }
                 List<MessageModel> allMessages = response.body();
+                // Insert messages into database
+                for (MessageModel messageModel : allMessages) {
+                    messageDao.insert(messageModel);
+                }
                 Intent intent = new Intent(view.getContext(), ChatScreenActivity.class);
                 Bundle bundle = new Bundle();
                 bundle.putSerializable("messages", (Serializable) allMessages);
@@ -119,8 +128,9 @@ public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRe
 
     }
     Retrofit createRetrofit() {
+        String serverUrl = preferences.getString("server","");
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://10.0.2.2:5201/")
+                .baseUrl(serverUrl)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         return retrofit;

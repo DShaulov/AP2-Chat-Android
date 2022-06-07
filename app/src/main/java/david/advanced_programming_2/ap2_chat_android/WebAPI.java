@@ -20,7 +20,7 @@ public interface WebAPI {
 
     @POST("/api/userregister")
     Call<ResponseModel> registerUser(@Query("id") String username, @Query("password")String password,
-                            @Query("name") String name, @Query("server") String server);
+                            @Query("name") String name, @Query("server") String server, @Query("firebaseToken") String token);
 
     @GET("/api/contacts")
     Call<List<ContactModel>> getContacts(@Header("Authorization") String token);
