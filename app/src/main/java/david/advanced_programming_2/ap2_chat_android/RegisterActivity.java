@@ -183,6 +183,7 @@ public class RegisterActivity extends AppCompatActivity {
         Bundle bundle = new Bundle();
         bundle.putSerializable("username", username);
         bundle.putSerializable("password", password);
+        bundle.putSerializable("firebaseToken", firebaseToken);
         intent.putExtra("Bundle", bundle);
         startActivity(intent);
     }

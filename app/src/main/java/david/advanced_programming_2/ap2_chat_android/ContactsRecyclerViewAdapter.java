@@ -62,7 +62,12 @@ public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRe
     public void onBindViewHolder(@NonNull ContactsRecyclerViewAdapter.MyViewHolder holder, int position) {
         int lastPosition = holder.getAdapterPosition();
         holder.contactName.setText(contacts.get(position).getName());
-        holder.contactLastDate.setText(contacts.get(position).getLastdate().replace("T", " "));
+        if (contacts.get(position).getLastdate() != null) {
+            holder.contactLastDate.setText(contacts.get(position).getLastdate().replace("T", " "));
+        }
+        else {
+            holder.contactLastDate.setText("");
+        }
         holder.contactLastMessage.setText(contacts.get(position).getLast());
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -94,6 +99,9 @@ public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRe
     }
 
     private void fetchMessages(String contactId, String contactServer, String contactName, View view) {
+        // TODO delete if no longer needed
+        List<MessageModel> dbMessages = messageDao.index();
+
         Retrofit retrofit = createRetrofit();
         WebAPI webApi = retrofit.create(WebAPI.class);
         String fullToken = "Bearer " + preferences.getString("token","");
@@ -126,6 +134,11 @@ public class ContactsRecyclerViewAdapter extends RecyclerView.Adapter<ContactsRe
             }
         });
 
+    }
+    private boolean filterCondition(MessageModel message ,String userId, String contactId) {
+        boolean firstCondition = (message.getFrom().equals(userId) && message.getTo().equals(contactId) && message.isSent());
+        boolean secondCondition = (message.getFrom().equals(contactId) && message.getTo().equals(userId) && !message.isSent());
+        return firstCondition || secondCondition;
     }
     Retrofit createRetrofit() {
         String serverUrl = preferences.getString("server","");

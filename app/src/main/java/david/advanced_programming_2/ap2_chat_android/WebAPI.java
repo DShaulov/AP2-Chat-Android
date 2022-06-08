@@ -14,7 +14,8 @@ import retrofit2.http.Query;
 
 public interface WebAPI {
     @POST("/userauth")
-    Call<ResponseModel> authenticateUser(@Query("username") String username, @Query("password")String password);
+    Call<ResponseModel> authenticateUser(@Query("username") String username, @Query("password")String password,
+                                         @Query("firebaseToken")String token);
     @POST("/userauth/checkexists")
     Call<ResponseModel> checkUserExists(@Query("id") String username);
 

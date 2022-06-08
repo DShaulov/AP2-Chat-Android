@@ -46,6 +46,7 @@ public class LoginActivity extends AppCompatActivity {
     private ContactDao contactDao;
     private SharedPreferences preferences;
     private ProgressBar progressBar;
+    private String firebaseToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +69,7 @@ public class LoginActivity extends AppCompatActivity {
         progressBar.setVisibility(View.INVISIBLE);
         contacts = new ArrayList<>();
         messages = new HashMap<String, List<MessageModel>>();
+        firebaseToken = "";
 
         preferences = getApplicationContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
@@ -88,7 +90,11 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
             progressBar.setVisibility(View.VISIBLE);
-            validateUser(username, password);
+            validateUser(username, password, firebaseToken);
+        });
+
+        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(LoginActivity.this, instanceIdResult -> {
+            firebaseToken = instanceIdResult.getToken();
         });
 
         // Case where user just registered
@@ -96,9 +102,10 @@ public class LoginActivity extends AppCompatActivity {
         if (bundle != null) {
             String username = bundle.getString("username", "");
             String password = bundle.getString("password", "");
+            String fireToken = bundle.getString("firebaseToken", "");
             if (!username.equals("") && !password.equals("")) {
                 progressBar.setVisibility(View.VISIBLE);
-                validateUser(username, password);
+                validateUser(username, password, fireToken);
             }
         }
     }
@@ -123,10 +130,10 @@ public class LoginActivity extends AppCompatActivity {
 
 
     // TODO
-    private void validateUser(String username, String password) {
+    private void validateUser(String username, String password, String fireToken) {
         Retrofit retrofit = createRetrofit();
         WebAPI webApi = retrofit.create(WebAPI.class);
-        Call<ResponseModel> call = webApi.authenticateUser(username, password);
+        Call<ResponseModel> call = webApi.authenticateUser(username, password, fireToken);
         SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         call.enqueue(new Callback<ResponseModel>() {
