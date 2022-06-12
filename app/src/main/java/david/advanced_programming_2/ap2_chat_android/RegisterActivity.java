@@ -1,11 +1,17 @@
 package david.advanced_programming_2.ap2_chat_android;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -17,6 +23,7 @@ import android.widget.TextView;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.iid.FirebaseInstanceId;
 
+import java.io.IOException;
 import java.io.Serializable;
 
 import retrofit2.Call;
@@ -38,6 +45,8 @@ public class RegisterActivity extends AppCompatActivity {
     private SharedPreferences preferences;
     private String firebaseToken;
     private ProgressBar progressBar;
+    private Bitmap profileImageBitmap;
+    private int SELECT_PICTURE_CODE;
 
 
     @Override
@@ -57,20 +66,47 @@ public class RegisterActivity extends AppCompatActivity {
         preferences = getApplicationContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         progressBar = findViewById(R.id.registerProgressBar);
         progressBar.setVisibility(View.INVISIBLE);
+        profileImageBitmap = null;
+        SELECT_PICTURE_CODE = 200;
 
         toLoginBtn.setOnClickListener(view -> startLoginActivity());
         registerBtn.setOnClickListener(view -> handleRegister());
         optionsBtn.setOnClickListener(view -> startOptionsActivity());
-        uploadImageBtn.setOnClickListener(view -> {
-            //startActivityForResult(new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.INTERNAL_CONTENT_URI), GET_FROM_GALLERY);
-        });
+        uploadImageBtn.setOnClickListener(view -> chooseImage());
 
         // Get firebase token for push notifications
-
         FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(RegisterActivity.this, instanceIdResult -> {
             firebaseToken = instanceIdResult.getToken();
         });
     }
+    private void chooseImage() {
+        Intent i = new Intent();
+        i.setType("image/*");
+        i.setAction(Intent.ACTION_GET_CONTENT);
+
+        launchActivity.launch(i);
+    }
+
+    ActivityResultLauncher<Intent> launchActivity = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+        if (result.getResultCode() == Activity.RESULT_OK) {
+            Intent data = result.getData();
+            if (data != null && data.getData() != null) {
+                Uri selectedImageUri = data.getData();
+                Bitmap selectedImageBitmap;
+                try {
+                    selectedImageBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImageUri);
+                    uploadImageBtn.setBackgroundColor(getResources().getColor(R.color.green));
+                    profileImageBitmap = selectedImageBitmap;
+                    int a = 5;
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }
+    });
+
 
     private void startLoginActivity() {
         finish();

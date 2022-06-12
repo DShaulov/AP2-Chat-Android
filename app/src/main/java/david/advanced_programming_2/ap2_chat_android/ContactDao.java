@@ -15,7 +15,7 @@ public interface ContactDao {
     List<ContactModel> index();
     @Query("SELECT * FROM contactmodel WHERE id = :id")
     ContactModel get(int id);
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(ContactModel contact);
     @Update
     void update(ContactModel contact);
