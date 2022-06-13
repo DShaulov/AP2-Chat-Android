@@ -167,6 +167,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void fetchContacts() {
+        //
         Retrofit retrofit = createRetrofit();
         WebAPI webApi = retrofit.create(WebAPI.class);
         String fullToken = "Bearer " + preferences.getString("token","");
